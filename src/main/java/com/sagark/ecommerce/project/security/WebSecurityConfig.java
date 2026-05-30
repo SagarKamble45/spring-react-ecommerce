@@ -99,6 +99,7 @@ public class WebSecurityConfig {
     @Bean
     public CommandLineRunner initData (RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder){
        return args -> {
+
            // Retrive or create roles
            Role userRole = roleRepository.findByRoleName(AppRole.ROLE_USER)
                    .orElseGet(()-> {
@@ -129,7 +130,7 @@ public class WebSecurityConfig {
                User seller1 = new User("seller1", "seller1@gmail.com",passwordEncoder.encode("password2"));
                userRepository.save(seller1);
            }
-           if(!userRepository.existsByUserName("admin")){
+           if(!userRepository.existsByUserName("admin1")){
                User admin = new User("admin1", "admin1@gmail.com",passwordEncoder.encode("password3"));
                userRepository.save(admin);
            }
@@ -145,7 +146,7 @@ public class WebSecurityConfig {
                userRepository.save(seller);
 
            });
-           userRepository.findByUserName("admin").ifPresent(admin -> {
+           userRepository.findByUserName("admin1").ifPresent(admin -> {
                admin.setRoles(adminRoles);
                userRepository.save(admin);
 

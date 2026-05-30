@@ -47,6 +47,14 @@
 			<artifactId>spring-boot-h2console</artifactId>
 		</dependency>
 
+
+		<!-- Postgresql Connector -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- Security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
