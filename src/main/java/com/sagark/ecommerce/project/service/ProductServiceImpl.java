@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,6 +43,9 @@ public class ProductServiceImpl implements ProductService{
 
     @Value("${project.image}")
     private String path;
+
+    @Value("${image.base.url}")
+    private String imageBaseUrl;
 
     @Autowired
     private CartRepository cartRepository;
@@ -67,7 +71,11 @@ public class ProductServiceImpl implements ProductService{
         }
         if (ifProductNotPresent){
             Product product = modelMapper.map(productDTO, Product.class);
-            product.setImage("default.png");
+
+            if (product.getImage() == null || product.getImage().isBlank()) {
+                product.setImage("default.png");
+            }
+
             product.setCategory(category);
             double specialPrice = product.getPrice() - ((product.getDiscount() * 0.01)*product.getPrice());
             product.setSpecialPrice(specialPrice);
@@ -89,7 +97,13 @@ public class ProductServiceImpl implements ProductService{
         Page<Product> pageProducts = productRepository.findAll(pageDetails);
         // check if product size is 0 or not
     List<Product> products = pageProducts.getContent();
-    List<ProductDTO> productDTOS = products.stream().map(product -> modelMapper.map(product,ProductDTO.class)).toList();
+    List<ProductDTO> productDTOS = products.stream()
+            .map(product -> {
+                ProductDTO productDTO = modelMapper.map(product,ProductDTO.class);
+                productDTO.setImage(constructImageUrl(product.getImage()));
+                return productDTO;
+            })
+            .toList();
 
 //    if (products.isEmpty()){
 //        throw new APIException("No Products Exists");
@@ -103,6 +117,10 @@ public class ProductServiceImpl implements ProductService{
     productResponse.setTotalPages(pageProducts.getTotalPages());
     productResponse.setLastPage(pageProducts.isLast());
     return productResponse;
+    }
+
+    private String constructImageUrl(String imageName){
+        return imageBaseUrl.endsWith("/") ? imageBaseUrl+imageName : imageBaseUrl + "/" + imageName;
     }
 
     @Override
@@ -150,7 +168,7 @@ public class ProductServiceImpl implements ProductService{
         List<Product> products = pageProducts.getContent();
         List<ProductDTO> productDTOS = products.stream().map(product -> modelMapper.map(product,ProductDTO.class)).toList();
         if (products.isEmpty()){
-            throw new APIException("Products not found wiht keyword: " + keyword);
+            throw new APIException("Products not found with keyword: " + keyword);
         }
 
         ProductResponse productResponse = new ProductResponse();
