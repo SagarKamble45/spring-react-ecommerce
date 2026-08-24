@@ -49,7 +49,7 @@ public class UserInfoResponse {
     }
 
 
-    public UserInfoResponse(Long id,String jwtToken, String username, List<String> roles) {
+    public UserInfoResponse(Long id, String jwtToken, String username, List<String> roles) {
         this.id = id;
         this.jwtToken = jwtToken;
         this.username = username;
