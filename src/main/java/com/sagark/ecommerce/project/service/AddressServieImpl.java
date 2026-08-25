@@ -73,9 +73,9 @@ public class AddressServieImpl implements AddressService {
         addressFromDatabase.setCity(addressDTO.getCity());
         addressFromDatabase.setPincode(addressDTO.getPincode());
         addressFromDatabase.setState(addressDTO.getState());
-        addressFromDatabase.setStreet(addressDTO.getStreet());
+//        addressFromDatabase.setStreet(addressDTO.getStreet());
         addressFromDatabase.setCountry(addressDTO.getCountry());
-        addressFromDatabase.setBuildName(addressDTO.getBuildName());
+//        addressFromDatabase.setBuildName(addressDTO.getBuildName());
 
         Address updatedAddress = addressRepository.save(addressFromDatabase);
 
