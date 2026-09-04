@@ -2,6 +2,7 @@ package com.sagark.ecommerce.project.Controller;
 
 
 import com.sagark.ecommerce.project.paylod.CartDTO;
+import com.sagark.ecommerce.project.paylod.CartItemDTO;
 import com.sagark.ecommerce.project.repositories.CartRepository;
 import com.sagark.ecommerce.project.service.CartService;
 import com.sagark.ecommerce.project.util.AuthUtil;
@@ -24,6 +25,13 @@ public class CartController {
     private CartService cartService;
     @Autowired
     private CartRepository cartRepository;
+
+    @PostMapping("/cart/create")
+    public ResponseEntity<String> createOrUpdteCart(@RequestBody List<CartItemDTO> cartItems){
+        String response = cartService.createOrUpdateCartWithItems(cartItems);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+
+    }
 
     @PostMapping("/carts/products/{productId}/quantity/{quantity}")
     public ResponseEntity<CartDTO> addProductToCart(@PathVariable Long productId, @PathVariable Integer quantity){

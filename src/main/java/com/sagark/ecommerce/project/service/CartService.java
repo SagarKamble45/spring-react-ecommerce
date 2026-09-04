@@ -1,6 +1,7 @@
 package com.sagark.ecommerce.project.service;
 
 import com.sagark.ecommerce.project.paylod.CartDTO;
+import com.sagark.ecommerce.project.paylod.CartItemDTO;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
@@ -20,4 +21,6 @@ public interface CartService {
     String deleteProductFromCart(Long cartId, Long productId);
 
     void updateProductInCarts(Long cartId, Long productId);
+
+    String createOrUpdateCartWithItems(List<CartItemDTO> cartItems);
 }

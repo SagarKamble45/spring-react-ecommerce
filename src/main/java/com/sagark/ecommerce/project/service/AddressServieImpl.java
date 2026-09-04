@@ -68,19 +68,21 @@ public class AddressServieImpl implements AddressService {
     @Override
     public AddressDTO updateAddress(Long addressId, AddressDTO addressDTO) {
 
-        Address addressFromDatabase = addressRepository.findById(addressId).orElseThrow(()-> new ResourceNotFoundException("Address", "addressId", addressId));
+        Address addressFromDatabase = addressRepository.findById(addressId)
+                .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
 
+        addressFromDatabase.setFullName(addressDTO.getFullName());
+        addressFromDatabase.setPhone(addressDTO.getPhone());
+        addressFromDatabase.setAddress(addressDTO.getAddress());
         addressFromDatabase.setCity(addressDTO.getCity());
         addressFromDatabase.setPincode(addressDTO.getPincode());
         addressFromDatabase.setState(addressDTO.getState());
-//        addressFromDatabase.setStreet(addressDTO.getStreet());
         addressFromDatabase.setCountry(addressDTO.getCountry());
-//        addressFromDatabase.setBuildName(addressDTO.getBuildName());
 
         Address updatedAddress = addressRepository.save(addressFromDatabase);
 
         User user = addressFromDatabase.getUser();
-        user.getAddresses().removeIf(address->address.getAddressId().equals(addressId));
+        user.getAddresses().removeIf(address -> address.getAddressId().equals(addressId));
         user.getAddresses().add(updatedAddress);
         userRepository.save(user);
 

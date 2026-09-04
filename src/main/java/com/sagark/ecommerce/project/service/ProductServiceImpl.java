@@ -12,9 +12,11 @@ import com.sagark.ecommerce.project.repositories.CartRepository;
 import com.sagark.ecommerce.project.repositories.CategoryRepository;
 import com.sagark.ecommerce.project.repositories.ProductRepository;
 
+import com.sagark.ecommerce.project.util.ImageNameUtil;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,16 +43,16 @@ public class ProductServiceImpl implements ProductService{
     @Autowired
     private ModelMapper modelMapper;
 
-    @Value("${project.image}")
-    private String path;
-
-    @Value("${image.base.url}")
-    private String imageBaseUrl;
+    @Autowired
+    private ImageNameUtil imageNameUtil;
 
     @Autowired
     private CartRepository cartRepository;
     @Autowired
     private CartService cartService;
+
+    @Value("${project.image}")
+    private String path;
 
 
     @Override
@@ -114,7 +116,7 @@ public class ProductServiceImpl implements ProductService{
     List<ProductDTO> productDTOS = products.stream()
             .map(product -> {
                 ProductDTO productDTO = modelMapper.map(product,ProductDTO.class);
-                productDTO.setImage(constructImageUrl(product.getImage()));
+                productDTO.setImage(imageNameUtil.constructImageUrl(product.getImage()));
                 return productDTO;
             })
             .toList();
@@ -133,9 +135,8 @@ public class ProductServiceImpl implements ProductService{
     return productResponse;
     }
 
-    private String constructImageUrl(String imageName){
-        return imageBaseUrl.endsWith("/") ? imageBaseUrl+imageName : imageBaseUrl + "/" + imageName;
-    }
+
+
 
     @Override
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {

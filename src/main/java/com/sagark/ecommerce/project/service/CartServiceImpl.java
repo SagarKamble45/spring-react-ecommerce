@@ -8,11 +8,13 @@ import com.sagark.ecommerce.project.model.Cart;
 import com.sagark.ecommerce.project.model.CartItem;
 import com.sagark.ecommerce.project.model.Product;
 import com.sagark.ecommerce.project.paylod.CartDTO;
+import com.sagark.ecommerce.project.paylod.CartItemDTO;
 import com.sagark.ecommerce.project.paylod.ProductDTO;
 import com.sagark.ecommerce.project.repositories.CartItemRepository;
 import com.sagark.ecommerce.project.repositories.CartRepository;
 import com.sagark.ecommerce.project.repositories.ProductRepository;
 import com.sagark.ecommerce.project.util.AuthUtil;
+import com.sagark.ecommerce.project.util.ImageNameUtil;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,9 @@ public class CartServiceImpl implements CartService{
 
     @Autowired
     private AuthUtil authUtil;
+
+    @Autowired
+    private ImageNameUtil imageNameUtil;
 
     @Autowired
     ModelMapper modelMapper;
@@ -131,21 +136,37 @@ public class CartServiceImpl implements CartService{
                     cartDTO.setProducts(products);
                     return cartDTO;
                 } ).toList();
+
         return cartDTOS;
     }
 
     @Override
     public CartDTO getCart(String emailId, Long cartId) {
+
         Cart cart = cartRepository.findCartByEmailAndCartId(emailId, cartId);
-        if (cart==null){
+        if (cart == null) {
             throw new ResourceNotFoundException("Cart", "cartId", cartId);
         }
-        CartDTO cartDTO= modelMapper.map(cart, CartDTO.class);
-        cart.getCartItems().forEach(c -> c.getProduct().setQuantity(c.getQuantity()));
-        List<ProductDTO> products = cart.getCartItems().stream().map(
-                p -> modelMapper.map(p.getProduct(), ProductDTO.class)
-        ).toList();
+
+        CartDTO cartDTO = modelMapper.map(cart, CartDTO.class);
+
+        cart.getCartItems().forEach(
+                cartItem -> cartItem.getProduct().setQuantity(cartItem.getQuantity())
+        );
+
+        List<ProductDTO> products = cart.getCartItems()
+                .stream()
+                .map(cartItem -> modelMapper.map(cartItem.getProduct(), ProductDTO.class))
+                .toList();
+
+        products.forEach(product ->
+                product.setImage(
+                        imageNameUtil.constructImageUrl(product.getImage())
+                )
+        );
+
         cartDTO.setProducts(products);
+
         return cartDTO;
     }
 
@@ -241,5 +262,49 @@ public class CartServiceImpl implements CartService{
         cart.setTotalPrice(cartPrice+(cartItem.getProductPrice() * cartItem.getQuantity()));
 
          cartItemRepository.save(cartItem);
+    }
+
+    @Transactional
+    @Override
+    public String createOrUpdateCartWithItems(List<CartItemDTO> cartItems) {
+        // Get User's email
+        String emailId = authUtil.loggedInEmail();
+        //check if an existing cart is available or create a new one
+        Cart existingCart = cartRepository.findCartByEmail(emailId);
+        if (existingCart == null){
+            existingCart = new Cart();
+            existingCart.setTotalPrice(0.00);
+            existingCart.setUser(authUtil.loggedInUser());
+            existingCart = cartRepository.save(existingCart);
+        }else {
+            // clear all current items in the existing cart
+            cartItemRepository.deleteAllByCartId(existingCart.getCartId());
+        }
+
+        double totalPrice = 0.00;
+        // process each item in the request to add to the cart
+        for (CartItemDTO cartItemDTO : cartItems) {
+            Long productId = cartItemDTO.getProductId();
+            Integer quantity = cartItemDTO.getQuantity();
+
+            // find the product by Id
+            Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+
+            //  directly update product stock and total price
+            product.setQuantity(product.getQuantity() - quantity);
+            totalPrice += product.getSpecialPrice() * quantity;
+            //  create and save cart item
+            CartItem cartItem = new CartItem();
+            cartItem.setProduct(product);
+            cartItem.setCart(existingCart);
+            cartItem.setQuantity(quantity);
+            cartItem.setProductPrice(product.getSpecialPrice());
+            cartItem.setDiscount(product.getDiscount());
+            cartItemRepository.save(cartItem);
+        }
+        // update the cart's total price and save
+        existingCart.setTotalPrice(totalPrice);
+        cartRepository.save(existingCart);
+        return "Cart created/updated with the new items successfully! ";
     }
 }
