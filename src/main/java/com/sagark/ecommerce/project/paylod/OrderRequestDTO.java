@@ -15,4 +15,10 @@ public class OrderRequestDTO {
     private String pgPaymentId;
     private String pgStatus;
     private String pgResponseMessage;
+
+
+    // New: filled in by the frontend from the Razorpay checkout response.
+    private String razorpayOrderId;
+    private String razorpayPaymentId;
+    private String razorpaySignature;
 }
