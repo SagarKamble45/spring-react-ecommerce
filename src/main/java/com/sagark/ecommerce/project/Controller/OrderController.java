@@ -3,8 +3,10 @@ package com.sagark.ecommerce.project.Controller;
 
 import com.sagark.ecommerce.project.paylod.OrderDTO;
 import com.sagark.ecommerce.project.paylod.OrderRequestDTO;
+
 import com.sagark.ecommerce.project.service.OrderService;
 import com.sagark.ecommerce.project.util.AuthUtil;
+import com.stripe.model.PaymentIntent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,9 @@ public class OrderController {
     @PostMapping("/order/users/payments/{paymentMethod}")
     public ResponseEntity<OrderDTO> orderProducts (@PathVariable String paymentMethod, @RequestBody OrderRequestDTO orderRequestDTO){
         String emailId = authUtil.loggedInEmail();
+
+
+        System.out.println("Order DTO: " + orderRequestDTO);
 
         String pgName=orderRequestDTO.getPgName();
         String pgPaymentId=orderRequestDTO.getPgPaymentId();
@@ -67,6 +72,10 @@ public class OrderController {
                 pgStatus,
                 pgResponseMessage
         );
+
+        System.out.println("new Order DTO: " + orderDTO);
         return new ResponseEntity<>(orderDTO, HttpStatus.CREATED);
     }
+
+
 }
