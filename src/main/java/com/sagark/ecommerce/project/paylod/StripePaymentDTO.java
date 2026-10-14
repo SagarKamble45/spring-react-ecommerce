@@ -14,5 +14,4 @@ public class StripePaymentDTO {
     private Address address;
     private String description;
     private Map<String, String> metadata;
-
 }
