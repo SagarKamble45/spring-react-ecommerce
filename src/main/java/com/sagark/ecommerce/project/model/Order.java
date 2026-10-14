@@ -26,6 +26,10 @@ public class Order {
     @Column(nullable = false)
     private String email;
 
+    @Column(name = "user_name")
+    private String userName;
+
+
     @OneToMany(mappedBy = "order", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<OrderItem> orderItems = new ArrayList<>();
 
@@ -41,5 +45,7 @@ public class Order {
     @ManyToOne
     @JoinColumn(name="address_id")
     private Address address;
+
+
 
 }
