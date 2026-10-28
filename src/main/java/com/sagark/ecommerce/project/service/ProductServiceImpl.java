@@ -5,9 +5,7 @@ import com.sagark.ecommerce.project.exceptions.ResourceNotFoundException;
 import com.sagark.ecommerce.project.model.Cart;
 import com.sagark.ecommerce.project.model.Category;
 import com.sagark.ecommerce.project.model.Product;
-import com.sagark.ecommerce.project.paylod.CartDTO;
-import com.sagark.ecommerce.project.paylod.ProductDTO;
-import com.sagark.ecommerce.project.paylod.ProductResponse;
+import com.sagark.ecommerce.project.paylod.*;
 import com.sagark.ecommerce.project.repositories.CartRepository;
 import com.sagark.ecommerce.project.repositories.CategoryRepository;
 import com.sagark.ecommerce.project.repositories.ProductRepository;
@@ -136,8 +134,6 @@ public class ProductServiceImpl implements ProductService{
     }
 
 
-
-
     @Override
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
 
@@ -262,6 +258,102 @@ public class ProductServiceImpl implements ProductService{
     }
 
 
+    @Override
+    public ProductResponse getAllProductsforAdmin(String keyword, String category, String stockStatus, Integer pageNumber, Integer pageSize,
+                                                  String sortBy, String sortOrder) {
+
+        Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
+
+        Specification<Product> spec = (root, query, cb) -> cb.conjunction();
+
+        // Search box: product name, category name, or exact product ID
+        if (keyword != null && !keyword.isBlank()) {
+            String like = "%" + keyword.trim().toLowerCase() + "%";
+            String trimmed = keyword.trim();
+
+            spec = spec.and((root, query, cb) -> {
+                var byName     = cb.like(cb.lower(root.get("productName")), like);
+                var byCategory = cb.like(cb.lower(root.get("category").get("categoryName")), like);
+
+                if (trimmed.matches("\\d+")) {                       // "13" also matches productId 13
+                    return cb.or(byName, byCategory,
+                            cb.equal(root.get("productId"), Long.parseLong(trimmed)));
+                }
+                return cb.or(byName, byCategory);
+            });
+        }
+
+        // Category dropdown (exact name, case-insensitive)
+        if (category != null && !category.isBlank()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("category").get("categoryName")),
+                            category.trim().toLowerCase()));
+        }
+
+        // Status dropdown. The low-stock threshold (5) must match LOW_STOCK_THRESHOLD in the frontend.
+        if (stockStatus != null && !stockStatus.isBlank()) {
+            spec = spec.and((root, query, cb) -> switch (stockStatus.toUpperCase()) {
+                case "OUT_OF_STOCK" -> cb.lessThanOrEqualTo(root.get("quantity"), 0);
+                case "LOW_STOCK"    -> cb.between(root.get("quantity"), 1, 5);
+                case "IN_STOCK"     -> cb.greaterThan(root.get("quantity"), 5);
+                default             -> cb.conjunction();
+            });
+        }
+
+        Page<Product> pageProducts = productRepository.findAll(spec, pageDetails);
+
+        List<ProductDTO> productDTOS = pageProducts.getContent().stream()
+                .map(product -> {
+                    ProductDTO dto = modelMapper.map(product, ProductDTO.class);
+                    dto.setCategoryName(product.getCategory().getCategoryName());
+                    dto.setImage(imageNameUtil.constructImageUrl(product.getImage()));
+                    return dto;
+                })
+                .toList();
+
+        ProductResponse response = new ProductResponse();
+        response.setContent(productDTOS);
+        response.setPageNumber(pageProducts.getNumber());
+        response.setPageSize(pageProducts.getSize());
+        response.setTotalElements(pageProducts.getTotalElements());
+        response.setTotalPages(pageProducts.getTotalPages());
+        response.setLastPage(pageProducts.isLast());
+        return response;
+    }
+
+
+    @Override
+    public ProductStatsDTO getProductStats() {
+        ProductStatsDTO productStatsDTO = new ProductStatsDTO();
+
+        long totalProducts = productRepository.findAll().size();
+        long activeProducts = productRepository.getTotalActiveProducts();
+        long totalOutofStockProducts = productRepository.getTotalOutOfStockProducts();
+        long totalCategories = categoryRepository.findAll().size();
+
+        productStatsDTO.setTotalProducts(String.valueOf(totalProducts));
+        productStatsDTO.setTotalActiveProducts(String.valueOf(activeProducts));
+        productStatsDTO.setTotalOutOfStockProducts(String.valueOf(totalOutofStockProducts));
+        productStatsDTO.setTotalCategories(String.valueOf(totalCategories));
+
+        return productStatsDTO;
+    }
+
+    @Override
+    public List<RecentProductDTO> getLatestFiveOrders() {
+        List<Product> products = productRepository.findLatestFiveProducts();
+
+        List<RecentProductDTO> recentProductDTOS = products.stream().map(product -> {
+            RecentProductDTO recentProductDTO = modelMapper.map(product, RecentProductDTO.class);
+            recentProductDTO.setImage(imageNameUtil.constructImageUrl(product.getImage()));
+            return recentProductDTO;
+        }).toList();
+        return  recentProductDTOS;
+    }
 
 
 }

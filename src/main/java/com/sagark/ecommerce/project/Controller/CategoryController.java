@@ -3,10 +3,11 @@ package com.sagark.ecommerce.project.Controller;
 
 import com.sagark.ecommerce.project.config.AppConstants;
 import com.sagark.ecommerce.project.model.Category;
-import com.sagark.ecommerce.project.paylod.CategoryDTO;
-import com.sagark.ecommerce.project.paylod.CategoryResponse;
+import com.sagark.ecommerce.project.paylod.*;
+import com.sagark.ecommerce.project.repositories.CategoryRepository;
 import com.sagark.ecommerce.project.service.CategoryService;
 import jakarta.validation.Valid;
+import org.hibernate.sql.Update;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
@@ -23,7 +24,7 @@ public class CategoryController {
 
 
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, CategoryRepository categoryRepository) {
         this.categoryService = categoryService;
     }
 
@@ -33,9 +34,11 @@ public class CategoryController {
             @RequestParam(name="pageNumber", defaultValue = AppConstants.PAGE_NUMBER, required = false) Integer pageNumber,
             @RequestParam(name="pageSize", defaultValue = AppConstants.PAGE_SIZE, required = false) Integer pageSize,
             @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_CATEGORIES_BY, required = false) String sortBy,
-            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder)
+            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR, required = false) String sortOrder,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "status", required = false) String status)
     {
-        CategoryResponse categoryResponse = categoryService.getAllCategories(pageNumber, pageSize, sortBy, sortOrder);
+        CategoryResponse categoryResponse = categoryService.getAllCategories(pageNumber, pageSize, sortBy, sortOrder,keyword,status);
         return new ResponseEntity<>(categoryResponse,HttpStatus.OK);
     }
 
@@ -53,12 +56,22 @@ public class CategoryController {
     }
 
     @PutMapping("/admin/categories/{categoryId}")
-    public ResponseEntity<CategoryDTO> updateCategory(@Valid @RequestBody CategoryDTO categoryDTO, @PathVariable long categoryId){
+    public ResponseEntity<CategoryDTO> updateCategory(@Valid @RequestBody UpdateCategoryDTO updateCategoryDTO, @PathVariable long categoryId){
 
-            CategoryDTO updatedCategory = categoryService.updateCategory(categoryDTO, categoryId);
+        CategoryDTO updatedCategory = categoryService.updateCategory(updateCategoryDTO, categoryId);
         return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
 
-//            return new ResponseEntity<>("Category with category id "+categoryId+" Updated Succesfully", HttpStatus.OK);
+    }
 
+    @GetMapping("/admin/categoryStats")
+    public ResponseEntity<CategoryStatsDTO> fetchCategoryStats(){
+        CategoryStatsDTO categoryStatsDTO = categoryService.getCategoryStats();
+        return new ResponseEntity<>(categoryStatsDTO,HttpStatus.OK);
+    }
+
+
+    @GetMapping("admin/categoryDistribution")
+    public ResponseEntity<List<CategoryDistributionDTO>> fetchCategoryDistribution() {
+        return new ResponseEntity<>(categoryService.getCategoryDistribution(), HttpStatus.OK);
     }
 }
