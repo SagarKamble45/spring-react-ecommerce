@@ -1,8 +1,7 @@
 package com.sagark.ecommerce.project.Controller;
 
 import com.sagark.ecommerce.project.config.AppConstants;
-import com.sagark.ecommerce.project.paylod.ProductDTO;
-import com.sagark.ecommerce.project.paylod.ProductResponse;
+import com.sagark.ecommerce.project.paylod.*;
 import com.sagark.ecommerce.project.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -77,9 +77,38 @@ public class ProductController {
         return new ResponseEntity<>(deletedProduct, HttpStatus.OK);
     }
 
-    @PutMapping("/products/{productId}/image")
+    @PutMapping("/admin/products/{productId}/image")
     public ResponseEntity<ProductDTO> updateProductImage(@PathVariable Long productId, @RequestParam("image")MultipartFile image) throws IOException {
         ProductDTO updateProduct = productService.updateProductImage(productId,image);
         return new ResponseEntity<>(updateProduct, HttpStatus.OK);
+    }
+
+    @GetMapping("/admin/products")
+    public ResponseEntity<ProductResponse> getAllProductsForAdmin(
+            @RequestParam(name = "keyword",    required = false) String keyword,
+            @RequestParam(name = "category",   required = false) String category,
+            @RequestParam(name = "stockStatus",required = false) String stockStatus,
+        @RequestParam(name = "pageNumber", defaultValue = AppConstants.PAGE_NUMBER) Integer pageNumber,
+            @RequestParam(name = "pageSize", defaultValue = AppConstants.PAGE_SIZE) Integer pageSize,
+            @RequestParam(name = "sortBy", defaultValue = AppConstants.SORT_PRODUCTS_BY) String sortBy,
+            @RequestParam(name = "sortOrder", defaultValue = AppConstants.SORT_DIR) String sortOrder
+    ){
+        ProductResponse productResponse = productService.getAllProductsforAdmin(keyword, category, stockStatus, pageNumber, pageSize, sortBy, sortOrder);
+        return  new ResponseEntity<>(productResponse, HttpStatus.OK);
+    }
+
+
+    @GetMapping("/admin/productStats")
+    public ResponseEntity<ProductStatsDTO> getProductStats(){
+        ProductStatsDTO productStatsDto = productService.getProductStats();
+        return new ResponseEntity<ProductStatsDTO>(productStatsDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/admin/products/recent")
+    public ResponseEntity<List<RecentProductDTO>> getLatestFiveOrders() {
+
+        List<RecentProductDTO> recentProductDTO = productService.getLatestFiveOrders();
+
+        return  new ResponseEntity<List<RecentProductDTO>>(recentProductDTO, HttpStatus.OK);
     }
 }

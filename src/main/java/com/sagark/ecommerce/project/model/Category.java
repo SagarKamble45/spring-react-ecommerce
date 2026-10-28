@@ -21,9 +21,17 @@ public class Category{
 
 
     @NotBlank
-    @Size(min=5, message = "Name must contain atleast 5 characters")
+    @Size(min=5, message = "Name must contain at least 5 characters")
     private String categoryName;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "category", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Product> products;
+
+    @Size(max=250, message = "Description cannot exceed 250 characters" )
+    @Column(length = 250)
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private CategoryStatus categoryStatus = CategoryStatus.ACTIVE;
 }

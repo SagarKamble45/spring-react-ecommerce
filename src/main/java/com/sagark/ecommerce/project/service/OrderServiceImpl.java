@@ -183,10 +183,6 @@ public class OrderServiceImpl implements OrderService {
                 .map(order -> modelMapper.map(order, RecentOrderDTO.class))
                 .toList();
 
-        // Print mapped DTOs
-        System.out.println("After Map");
-        result.forEach(System.out::println);
-
         return result;
     }
 }
