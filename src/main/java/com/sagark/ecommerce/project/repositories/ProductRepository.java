@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import com.sagark.ecommerce.project.model.AppRole;
+import org.springframework.data.repository.query.Param;
+
 
 import java.util.List;
 
@@ -30,4 +33,15 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
             nativeQuery = true
     )
     List<Product> findLatestFiveProducts();
+
+    long countByUser_UserId(Long sellerId);
+
+    @Query("""
+    SELECT COUNT(DISTINCT p)
+    FROM Product p
+    JOIN p.user u
+    JOIN u.roles r
+    WHERE r.roleName = :role
+    """)
+    long countProductsBySellerRole(@Param("role") AppRole role);
 }
