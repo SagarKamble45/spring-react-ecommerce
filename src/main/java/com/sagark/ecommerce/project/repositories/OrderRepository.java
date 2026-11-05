@@ -43,4 +43,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             nativeQuery = true
     )
     List<Order> findLatestFiveOrders();
+
+    long countByAddress_User_UserId(Long userId);
 }

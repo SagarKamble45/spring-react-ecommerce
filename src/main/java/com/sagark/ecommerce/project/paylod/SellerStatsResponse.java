@@ -1,0 +1,19 @@
+package com.sagark.ecommerce.project.paylod;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class SellerStatsResponse {
+
+    private long totalSellers;
+
+    private long activeSellers;
+
+    private long inactiveSellers;
+
+    private long totalProducts;
+}
