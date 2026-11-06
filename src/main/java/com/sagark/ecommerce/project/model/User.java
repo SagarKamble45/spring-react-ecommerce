@@ -72,8 +72,12 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, orphanRemoval = true)
     private Set<Product> products;
 
-    // Seller-specific fields
+    // Customer-specific fields
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_status")
+    private CustomerStatus customerStatus;
 
+    // Seller-specific fields
     @Column(name = "store_name")
     private String storeName;
 
@@ -92,6 +96,17 @@ public class User {
     protected void onCreate() {
         if(createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (customerStatus == null && roles != null){
+            boolean isCustomer = roles.stream().anyMatch(role -> role.getRoleName()== AppRole.ROLE_USER);
+
+            boolean isSellerOrAdmin = roles.stream()
+                    .anyMatch(role ->
+                            role.getRoleName()==AppRole.ROLE_SELLER || role.getRoleName() == AppRole.ROLE_ADMIN
+                    );
+            if (isCustomer && isSellerOrAdmin){
+                customerStatus = CustomerStatus.ACTIVE;
+            }
         }
     }
 }

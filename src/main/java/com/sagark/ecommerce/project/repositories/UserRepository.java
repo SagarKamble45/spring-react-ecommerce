@@ -2,6 +2,7 @@ package com.sagark.ecommerce.project.repositories;
 
 
 import com.sagark.ecommerce.project.model.AppRole;
+import com.sagark.ecommerce.project.model.CustomerStatus;
 import com.sagark.ecommerce.project.model.SellerStatus;
 import com.sagark.ecommerce.project.model.User;
 import org.springframework.data.domain.Page;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -64,5 +66,78 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countSellersByRoleAndStatus(
             @Param("role") AppRole role,
             @Param("status") SellerStatus status
+    );
+
+
+    // Find customers with pagination, search and status filtering
+    @Query("""
+    SELECT DISTINCT u
+    FROM User u
+    JOIN u.roles r
+    WHERE r.roleName = :role
+    AND NOT EXISTS (
+        SELECT r2
+        FROM u.roles r2
+        WHERE r2.roleName IN :excludedRoles
+    )
+    AND (
+        :keyword = ''
+        OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        OR LOWER(COALESCE(u.phone, '')) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    )
+    AND (
+        :status IS NULL
+        OR u.customerStatus = :status
+        OR (u.customerStatus IS NULL AND :status = :activeStatus)
+    )
+    """)
+    Page<User> findAllCustomers(
+            @Param("role") AppRole role,
+            @Param("excludedRoles") List<AppRole> excludedRoles,
+            @Param("keyword") String keyword,
+            @Param("status") CustomerStatus status,
+            @Param("activeStatus") CustomerStatus activeStatus,
+            Pageable pageable
+    );
+
+    // Count all customers
+    @Query("""
+    SELECT COUNT(DISTINCT u)
+    FROM User u
+    JOIN u.roles r
+    WHERE r.roleName = :role
+    AND NOT EXISTS (
+        SELECT r2
+        FROM u.roles r2
+        WHERE r2.roleName IN :excludedRoles
+    )
+    """)
+    long countCustomers(
+            @Param("role") AppRole role,
+            @Param("excludedRoles") List<AppRole> excludedRoles
+    );
+
+    // Count customers by status, treating legacy NULL as ACTIVE
+    @Query("""
+    SELECT COUNT(DISTINCT u)
+    FROM User u
+    JOIN u.roles r
+    WHERE r.roleName = :role
+    AND NOT EXISTS (
+        SELECT r2
+        FROM u.roles r2
+        WHERE r2.roleName IN :excludedRoles
+    )
+    AND (
+        u.customerStatus = :status
+        OR (u.customerStatus IS NULL AND :status = :activeStatus)
+    )
+    """)
+    long countCustomersByStatus(
+            @Param("role") AppRole role,
+            @Param("excludedRoles") List<AppRole> excludedRoles,
+            @Param("status") CustomerStatus status,
+            @Param("activeStatus") CustomerStatus activeStatus
     );
 }
