@@ -65,40 +65,62 @@ public class AddressServieImpl implements AddressService {
         return addressDTOS;
     }
 
+
     @Override
-    public AddressDTO updateAddress(Long addressId, AddressDTO addressDTO) {
+    public AddressDTO updateAddress(
+            Long addressId,
+            AddressDTO addressDTO,
+            User user
+    ) {
+        // Find address only if it belongs to authenticated user
+        Address address = addressRepository
+                .findByAddressIdAndUser_UserId(
+                        addressId,
+                        user.getUserId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Address", "addressId", addressId
+                        ));
 
-        Address addressFromDatabase = addressRepository.findById(addressId)
-                .orElseThrow(() -> new ResourceNotFoundException("Address", "addressId", addressId));
+        // Update address details
+        address.setFullName(addressDTO.getFullName());
+        address.setPhone(addressDTO.getPhone());
+        address.setAddress(addressDTO.getAddress());
+        address.setCity(addressDTO.getCity());
+        address.setPincode(addressDTO.getPincode());
+        address.setState(addressDTO.getState());
+        address.setCountry(addressDTO.getCountry());
 
-        addressFromDatabase.setFullName(addressDTO.getFullName());
-        addressFromDatabase.setPhone(addressDTO.getPhone());
-        addressFromDatabase.setAddress(addressDTO.getAddress());
-        addressFromDatabase.setCity(addressDTO.getCity());
-        addressFromDatabase.setPincode(addressDTO.getPincode());
-        addressFromDatabase.setState(addressDTO.getState());
-        addressFromDatabase.setCountry(addressDTO.getCountry());
-
-        Address updatedAddress = addressRepository.save(addressFromDatabase);
-
-        User user = addressFromDatabase.getUser();
-        user.getAddresses().removeIf(address -> address.getAddressId().equals(addressId));
-        user.getAddresses().add(updatedAddress);
-        userRepository.save(user);
+        Address updatedAddress = addressRepository.save(address);
 
         return modelMapper.map(updatedAddress, AddressDTO.class);
     }
 
     @Override
-    public String deleteAddress(Long addressId) {
-        Address addressFromDatabase = addressRepository.findById(addressId).orElseThrow(()-> new ResourceNotFoundException("Address", "addressId", addressId));
+    public String deleteAddress(Long addressId, User user) {
 
-        User user = addressFromDatabase.getUser();
-        user.getAddresses().removeIf(address->address.getAddressId().equals(addressId));
+        // Find address only if it belongs to authenticated user
+        Address address = addressRepository
+                .findByAddressIdAndUser_UserId(
+                        addressId,
+                        user.getUserId()
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Address", "addressId", addressId
+                        ));
+
+        // Remove address from authenticated user's collection
+        user.getAddresses().removeIf(
+                item -> java.util.Objects.equals(
+                        item.getAddressId(), addressId
+                )
+        );
+
         userRepository.save(user);
+        addressRepository.delete(address);
 
-        addressRepository.delete(addressFromDatabase);
-
-        return "Address Deleted Successfully with addressId: "+ addressId;
+        return "Address deleted successfully with addressId: " + addressId;
     }
 }

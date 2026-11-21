@@ -60,15 +60,18 @@ public class AddressController {
 
     @PutMapping("/addresses/{addressId}")
     public ResponseEntity<AddressDTO> updateAddressById(@PathVariable Long addressId, @RequestBody AddressDTO addressDTO){
-        AddressDTO updatedAddress = addressService.updateAddress(addressId, addressDTO);
+
+        User user = authUtil.loggedInUser();
+
+        AddressDTO updatedAddress = addressService.updateAddress(addressId, addressDTO, user);
 
         return new ResponseEntity<>(updatedAddress, HttpStatus.OK);
-
     }
 
     @DeleteMapping("/addresses/{addressId}")
     public ResponseEntity<String> deleteAddress(@PathVariable Long addressId){
-        String status = addressService.deleteAddress(addressId);
+        User user = authUtil.loggedInUser();
+        String status = addressService.deleteAddress(addressId, user);
         return new ResponseEntity<>(status, HttpStatus.OK);
     }
 }

@@ -3,6 +3,7 @@ package com.sagark.ecommerce.project.service;
 import com.sagark.ecommerce.project.paylod.*;
 import jakarta.transaction.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 
@@ -27,4 +28,6 @@ public interface OrderService {
     OrderStatsDTO getOrderStats();
 
     List<RecentOrderDTO> getLatestFiveOrders();
+
+    OrderResponse getMyOrders(String email, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String status, LocalDate fromDate, LocalDate toDate);
 }

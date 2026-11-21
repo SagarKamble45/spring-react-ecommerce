@@ -9,6 +9,9 @@ import com.sagark.ecommerce.project.service.OrderService;
 import com.sagark.ecommerce.project.util.AuthUtil;
 import com.stripe.model.PaymentIntent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationProperties;
+import org.springframework.cglib.core.Local;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,7 +21,10 @@ import com.razorpay.RazorpayException;
 import com.sagark.ecommerce.project.exceptions.APIException;
 import com.sagark.ecommerce.project.service.RazorpayService;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api")
@@ -122,6 +128,70 @@ public class OrderController {
         List<RecentOrderDTO> recentOrderDto = orderService.getLatestFiveOrders();
 
        return  new ResponseEntity<List<RecentOrderDTO>>(recentOrderDto, HttpStatus.OK);
+    }
+
+    @GetMapping("/user/orders")
+    public ResponseEntity<OrderResponse> getMyOrders(
+            @RequestParam(
+                    name = "pageNumber",
+                    defaultValue = "0",
+                    required = false
+            ) Integer pageNumber,
+
+            @RequestParam(
+                    name = "pageSize",
+                    defaultValue = "10",
+                    required = false
+            ) Integer pageSize,
+
+            @RequestParam(
+                    name = "sortBy",
+                    defaultValue = "orderDate",
+                    required = false
+            ) String sortBy,
+
+            @RequestParam(
+                    name = "sortOrder",
+                    defaultValue = "desc",
+                    required = false
+            ) String sortOrder,
+
+            // Customer Order-history & filters
+            @RequestParam(
+                    name = "status",
+                    defaultValue = "ALL",
+                    required = false
+            ) String status,
+
+            @RequestParam(
+                    name="fromDate",
+                    required = false
+            ) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate fromDate,
+
+            @RequestParam(
+                    name = "toDate",
+                    required = false
+            ) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate toDate
+    ) {
+
+        // Get the authenticated customer's email
+        String email = authUtil.loggedInEmail();
+
+        // fetch only customer's order
+        OrderResponse orderResponse = orderService.getMyOrders(
+                email,
+                pageNumber,
+                pageSize,
+                sortBy,
+                sortOrder,
+                status,
+                fromDate,
+                toDate
+        );
+
+        return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 
 }
