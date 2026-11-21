@@ -124,4 +124,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") CustomerStatus status,
             @Param("activeStatus") CustomerStatus activeStatus
     );
+
+    boolean existsByUserNameAndUserIdNot(String username, Long userId);
+
+    User findByEmail(String email);
 }

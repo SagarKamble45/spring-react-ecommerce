@@ -43,6 +43,8 @@ public class User {
     @Column(name = "password")
     private String password;
 
+
+
     public User(String userName, String email, String password) {
         this.userName = userName;
         this.email = email;
@@ -83,6 +85,10 @@ public class User {
 
     @Column(name = "phone")
     private String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "seller_status")

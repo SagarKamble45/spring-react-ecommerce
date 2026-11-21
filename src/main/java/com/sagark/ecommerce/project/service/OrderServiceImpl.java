@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -184,5 +185,97 @@ public class OrderServiceImpl implements OrderService {
                 .toList();
 
         return result;
+    }
+
+    @Override
+    public OrderResponse getMyOrders(
+            String email,
+            Integer pageNumber,
+            Integer pageSize,
+            String sortBy,
+            String sortOrder,
+            String status,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+
+        // Validate pagination values before creating the PageRequest
+        if (pageNumber == null || pageNumber < 0){
+            throw new APIException("Page number cannot be negative");
+        }
+
+        if (pageSize == null || pageSize <=0 ){
+            throw new APIException("Page size must be greater than zero");
+        }
+
+        // Validate date range
+        if (fromDate != null && toDate != null
+                && fromDate.isAfter(toDate)){
+            throw new APIException("From date cannot be after to date");
+        }
+
+        // Normalise and validate the selected status
+        String normalizedStatus = (status == null || status.isBlank())
+                ? "ALL" : status.trim().toUpperCase();
+
+        List<String> allowedStatuses = List.of(
+                "ALL",
+                "IN_PROGRESS",
+                "DELIVERED",
+                "CANCELLED"
+        );
+
+        if (!allowedStatuses.contains(normalizedStatus)) {
+            throw new APIException("Invalid order status filter");
+        }
+
+        // Validating sorting field
+        if (sortBy == null || sortBy.isBlank()){
+            sortBy="orderDate";
+        }
+
+        if (!List.of("orderDate", "orderId", "totalAmount", "orderStatus")
+                .contains(sortBy)) {
+            throw new APIException("Invalid order sorting field");
+        }
+
+        // Apply ascending or descending sorting
+        Sort sortByAndOrder = "asc".equalsIgnoreCase(sortOrder)
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        // Create pagination details
+        Pageable pageDetails = PageRequest.of(
+                pageNumber,
+                pageSize,
+                sortByAndOrder
+        );
+
+        // Fetch orders using all selected filters
+        Page<Order> pageOrders = orderRepository.findMyOrdersWithFilters(
+                email,
+                normalizedStatus,
+                fromDate,
+                toDate,
+                pageDetails
+        );
+
+        // convert Order entities into OrderDTO objects
+        List<OrderDTO> orderDTOS = pageOrders.getContent()
+                .stream()
+                .map(order->modelMapper.map(order, OrderDTO.class))
+                .toList();
+
+        // Prepare the paginated response
+        OrderResponse orderResponse = new OrderResponse();
+
+        orderResponse.setContent(orderDTOS);
+        orderResponse.setPageNumber(pageOrders.getNumber());
+        orderResponse.setPageSize(pageOrders.getSize());
+        orderResponse.setTotalPages(pageOrders.getTotalPages());
+        orderResponse.setTotalElements(pageOrders.getTotalElements());
+        orderResponse.setLastPage(pageOrders.isLast());
+
+        return orderResponse;
     }
 }
